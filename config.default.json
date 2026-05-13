@@ -24,5 +24,10 @@
   },
   "logs": {
     "limit": 10
+  },
+  "tv": {
+    "blackhole": "/tmp/tv",
+    "quality": "1080p",
+    "excluded_terms": []
   }
 }

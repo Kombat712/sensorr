@@ -385,7 +385,105 @@ Star.Filters = {
   },
 }
 
+
+class Series {
+  constructor(payload) {
+    this.payload = payload
+  }
+
+  normalize() {
+    return {
+      id: this.payload.id.toString(),
+      title: this.payload.name || this.payload.title || '',
+      original_title: this.payload.original_name || this.payload.original_title || '',
+      overview: this.payload.overview || '',
+      genres: (this.payload.genres || []).map(genre => typeof genre === 'object' ? genre.id : genre),
+      status: this.payload.status || 'ongoing',
+      seasons_count: this.payload.number_of_seasons || 0,
+      poster_path: this.payload.poster_path || '',
+      vote_average: this.payload.vote_average || 0,
+      state: this.payload.state || 'following',
+      type: 'series',
+      seasons: (this.payload.seasons || []).map(season => new Season({ ...season, series_id: this.payload.id }).normalize()),
+      credits: ((this.payload.credits || {}).cast || []).map(star => ({ id: star.id.toString(), name: star.name, profile_path: star.profile_path || '', known_for_department: star.known_for_department || 'Acting', popularity: star.popularity || 0, state: 'stalked' })),
+    }
+  }
+}
+
+class Season {
+  constructor(payload) {
+    this.payload = payload
+  }
+
+  normalize() {
+    return {
+      id: `${this.payload.series_id || 'series'}:s${this.payload.season_number}`,
+      series_id: (this.payload.series_id || '').toString(),
+      season_number: this.payload.season_number || 0,
+      overview: this.payload.overview || '',
+      poster_path: this.payload.poster_path || '',
+      air_date: this.payload.air_date ? new Date(this.payload.air_date).getTime() : null,
+      type: 'season',
+      episodes: (this.payload.episodes || []).map(episode => new Episode({ ...episode, series_id: this.payload.series_id, season_number: this.payload.season_number }).normalize()),
+    }
+  }
+}
+
+class Episode {
+  constructor(payload) {
+    this.payload = payload
+  }
+
+  normalize() {
+    return {
+      id: `${this.payload.series_id || 'series'}:s${this.payload.season_number}:e${this.payload.episode_number}`,
+      series_id: (this.payload.series_id || '').toString(),
+      season_number: this.payload.season_number || 0,
+      episode_number: this.payload.episode_number || 0,
+      name: this.payload.name || '',
+      overview: this.payload.overview || '',
+      air_date: this.payload.air_date ? new Date(this.payload.air_date).getTime() : null,
+      status: this.payload.air_date && new Date(this.payload.air_date) <= new Date() ? 'aired' : 'unreleased',
+      watched: !!this.payload.watched,
+      type: 'episode',
+    }
+  }
+}
+
+
+
+Series.Sortings = {
+  time: Movie.Sortings.time,
+  popularity: Movie.Sortings.popularity,
+  vote_average: Movie.Sortings.vote_average,
+}
+
+Series.Filters = {
+  query: Movie.Filters.query,
+  genre: Movie.Filters.genre,
+  popularity: Movie.Filters.popularity,
+  vote_average: Movie.Filters.vote_average,
+  state: () => ({
+    label: 'State',
+    type: 'checkbox',
+    options: [
+      { value: 'following', label: '👀 Following' },
+      { value: 'skipped', label: '⏭️ Skipped' },
+      { value: 'watched', label: '✅ Watched' },
+    ],
+    default: [],
+    orderize: true,
+    apply: (entity, values) => !values.length || values.some(state => entity.state === state),
+    histogram: (entities) => entities.reduce((histogram, entity) => ({
+      ...histogram,
+      [entity.state]: histogram[entity.state] + 1,
+    }), { following: 0, skipped: 0, watched: 0 }),
+  }),
+}
 module.exports = {
   Movie,
   Star,
+  Series,
+  Season,
+  Episode,
 }

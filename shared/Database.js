@@ -74,6 +74,29 @@ const SCHEMAS = {
       },
     },
   },
+
+  series: {
+    title: 'series',
+    version: 0,
+    description: 'Describe a TMDB tv series',
+    type: 'object',
+    required: ['id', 'title'],
+    attachments: {},
+    properties: {
+      id: { type: 'string', primary: true },
+      state: { type: 'string', default: 'following' },
+      title: { type: 'string' },
+      original_title: { type: 'string' },
+      overview: { type: 'string' },
+      genres: { type: 'array' },
+      status: { type: 'string' },
+      seasons_count: { type: 'number' },
+      poster_path: { type: 'string' },
+      vote_average: { type: 'number' },
+      seasons: { type: 'array' },
+      time: { type: 'number', index: true },
+    },
+  },
   stars: {
     title: 'star',
     version: 2,
@@ -199,6 +222,30 @@ const MIGRATIONS = {
       return doc
     }
   },
+
+  series: {
+    title: 'series',
+    version: 0,
+    description: 'Describe a TMDB tv series',
+    type: 'object',
+    required: ['id', 'title'],
+    attachments: {},
+    properties: {
+      id: { type: 'string', primary: true },
+      state: { type: 'string', default: 'following' },
+      title: { type: 'string' },
+      original_title: { type: 'string' },
+      overview: { type: 'string' },
+      genres: { type: 'array' },
+      status: { type: 'string' },
+      seasons_count: { type: 'number' },
+      poster_path: { type: 'string' },
+      vote_average: { type: 'number' },
+      seasons: { type: 'array' },
+      time: { type: 'number', index: true },
+    },
+  },
+  series: {},
   stars: {
     1: (doc) => {
       doc.gender = 0
