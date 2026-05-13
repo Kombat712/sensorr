@@ -7,6 +7,7 @@ import Medias from 'views/pages/Medias'
 import Library from 'views/pages/Library'
 import Discover from 'views/pages/Discover'
 import MoviePage from 'views/pages/Movie'
+import SeriesPage from 'views/pages/Series'
 import Collection from 'views/pages/Collection'
 import PersonPage from 'views/pages/Person'
 import Calendar from 'views/pages/Calendar'
@@ -57,7 +58,7 @@ const Body = ({ ...props }) => (
     <div css={styles.element}>
       <Switch>
         <Route path="/" exact component={Home} />
-        <Route path="/search/:subject(movie|collection|person)/:query?" exact component={Search} />
+        <Route path="/search/:subject(movie|collection|person|tv)/:query?" exact component={Search} />
         <Route path="/trending/:subject(movie|person)" exact component={Trending} />
         <Route path="/movies" exact component={() => <Redirect to="/movies/library" />} />
         <Route path="/movies/library" exact component={Library} />
@@ -72,6 +73,7 @@ const Body = ({ ...props }) => (
         <Route path="/movie/:id(\d+):slug(.*)?/recommendations" exact component={Recommendations} />
         <Route path="/movie/:id(\d+):slug(.*)?/similar" exact component={Similar} />
         <Route path="/movie/:id(\d+):slug(.*)?/:releases(releases)?" exact component={MoviePage} />
+        <Route path="/series/:id(\d+)" exact component={SeriesPage} />
         <Route path="/collection/:id" exact component={Collection} />
         <Route path="/star/:id" exact component={({ match: { params: { id } } }) => <Redirect to={`/person/${id}`} />} />
         <Route path="/person/:id(\d+):slug(.*)?" exact component={PersonPage} />

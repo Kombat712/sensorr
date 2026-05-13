@@ -3,13 +3,15 @@ const filenamify = require('filenamify')
 const { from, of, throwError, bindNodeCallback, EMPTY } = require('rxjs')
 const { map, mapTo, tap, filter, mergeMap, delay, pluck, catchError } = require('rxjs/operators')
 const TMDB = require('@shared/services/TMDB')
-const { Movie } = require('@shared/Documents')
+const { Movie, Series } = require('@shared/Documents')
 const filesize = require('@shared/utils/filesize')
 const uuidv4 = require('uuid/v4')
 const chalk = require('chalk')
+const Plex = require('@shared/services/Plex')
 
 async function record({ argv, log, session, logger, sensorr, db }) {
   const tmdb = new TMDB({ key: sensorr.config.tmdb, region: sensorr.config.region })
+  const plex = (sensorr.config.plex && (sensorr.config.plex.token || sensorr.config.plex.url)) ? new Plex(sensorr.config.plex) : null
   logger.init()
 
   if (sensorr.config.disabled) {
@@ -45,6 +47,14 @@ async function record({ argv, log, session, logger, sensorr, db }) {
           delay(2000),
         )
       }, null, 1),
+
+      mergeMap(() => from(db.series.allDocs({ include_docs: true })).pipe(
+        pluck('rows'),
+        map(rows => rows.map(entity => ({ id: entity.id, ...entity.doc }))),
+        mergeMap(series => from(series)),
+        filter(series => ['following'].includes(series.state)),
+        mergeMap(series => recordSeries(series), null, 1),
+      ), null, 1),
     ).subscribe(
       ({ movie, release, file, context }) => {
         log(
@@ -155,5 +165,78 @@ async function record({ argv, log, session, logger, sensorr, db }) {
     )
   }
 }
+
+
+  function recordSeries(series) {
+    const record = uuidv4()
+    const context = { session, record, series: series.id }
+
+    return of(series).pipe(
+      mergeMap(series => tmdb.getSeriesDetails(series.id)),
+      map(details => new Series({ ...series, ...details }).normalize()),
+      mergeMap(series => from(db.series.upsert(series.id, (doc) => ({ ...doc, ...series, time: Date.now() }))).pipe(mapTo(series))),
+      mergeMap(series => from((series.seasons || []).reduce((acc, season) => ([...acc, ...(season.episodes || []).map(ep => ({ ...ep, season_number: season.season_number }))]), [] )).pipe(
+        mergeMap(ep => hasSeriesInPlex(series).then(exists => ({ ep, exists }))),
+        filter(({ exists }) => !exists),
+        map(({ ep }) => ep),
+        filter(ep => ep.status === 'aired'),
+        filter(ep => !(series.watched || {})[`${ep.season_number}:${ep.episode_number}`]),
+        mergeMap(ep => lookEpisode(series, ep, context), null, 1),
+      )),
+      catchError(() => EMPTY),
+    )
+  }
+
+  async function hasSeriesInPlex(series) {
+    if (!plex) return false
+    try {
+      const sections = (((await plex.client.query('/library/sections')).MediaContainer || {}).Directory || []).filter(s => (s.type || '').toLowerCase() === 'show')
+      for (const section of sections) {
+        const items = (((await plex.client.query(`/library/sections/${section.key}/all`)).MediaContainer || {}).Metadata || [])
+        if (items.some(item => (item.title || '').toLowerCase() === (series.title || '').toLowerCase())) {
+          return true
+        }
+      }
+      return false
+    } catch (e) {
+      return false
+    }
+  }
+
+  function lookEpisode(series, episode, context = {}) {
+    log('📺', `Looking for ${chalk.inverse(series.title)} S${String(episode.season_number).padStart(2,'0')}E${String(episode.episode_number).padStart(2,'0')}`)
+
+    return sensorr.lookEpisode(series, episode, true, {}).pipe(
+      map(releases => releases.sort(sensorr.sort(sensorr.config.sort, sensorr.config.descending))),
+      filter(releases => releases.length),
+      map(releases => releases[0]),
+      mergeMap(release => grabEpisode(series, episode, release, context)),
+    )
+  }
+
+  function grabEpisode(series, episode, release, context = {}) {
+    const blackhole = (sensorr.config.tv || {}).blackhole || sensorr.config.blackhole
+    return of(release.link).pipe(
+      mergeMap(link => fetch(encodeURI(link))),
+      mergeMap(res => res.buffer()),
+      mergeMap(buffer => {
+        const episodeTag = `S${String(episode.season_number).padStart(2,'0')}E${String(episode.episode_number).padStart(2,'0')}`
+        const filename = `${blackhole}/${filenamify(`${series.title}-${episodeTag}-${release.site}`)}.torrent`
+        return bindNodeCallback(fs.mkdir)(blackhole, { recursive: true }).pipe(
+          mergeMap(() => bindNodeCallback(fs.writeFile)(filename, buffer)),
+          mapTo(filename),
+        )
+      }),
+      mergeMap(file => of(null).pipe(
+        mergeMap(() => db.series.upsert(series.id, (doc) => ({
+          ...doc,
+          ...series,
+          watched: { ...(doc.watched || {}), [`${episode.season_number}:${episode.episode_number}`]: true },
+          time: Date.now(),
+        }))),
+        mapTo({ movie: { title: series.title, year: new Date(episode.air_date || Date.now()).getFullYear() }, release, file, context }),
+      )),
+    )
+  }
 
 module.exports = record

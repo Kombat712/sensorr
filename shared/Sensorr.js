@@ -229,6 +229,39 @@ class Sensorr {
       map(releases => releases.sort(this.sort(this.config.sort, this.config.descending))),
     )
   }
+
+  lookEpisode(series, episode, strict = false, hooks = {}) {
+    const season = `S${`${episode.season_number || 0}`.padStart(2, '0')}`
+    const number = `E${`${episode.episode_number || 0}`.padStart(2, '0')}`
+    const terms = [
+      `${series.title} ${season}${number}`,
+      `${series.original_title || series.title} ${season}${number}`,
+      `${series.title} Season ${episode.season_number}`,
+      `${series.title} S${`${episode.season_number || 0}`.padStart(2, '0')}`,
+    ]
+
+    return this.look({
+      ...series,
+      terms: { titles: terms.map(title => string.clean(title)), years: [new Date(episode.air_date || Date.now()).getFullYear()] },
+    }, strict, hooks).pipe(
+      map(releases => releases.map(release => {
+        const generated = (release.meta.generated || '').toUpperCase()
+        const expected = `${season}${number}`
+        const isSeasonPack = generated.includes(`S${`${episode.season_number || 0}`.padStart(2, '0')}`) && !/E\d{2}/.test(generated)
+        const valid = generated.includes(expected) || isSeasonPack
+
+        return {
+          ...release,
+          valid: release.valid && valid,
+          reason: release.valid && !valid ? `📺 Episode mismatch for ${expected}` : release.reason,
+          warning: release.valid && !valid ? 1 : release.warning,
+          score: release.score + (isSeasonPack ? 50 : 100),
+        }
+      })),
+      map(releases => releases.filter(release => !strict || release.valid)),
+    )
+  }
+
 }
 
 module.exports = Sensorr

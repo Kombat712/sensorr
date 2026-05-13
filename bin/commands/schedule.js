@@ -1,3 +1,23 @@
+
+
+async function upsertEpisodePublication(db, series, season, episode) {
+  if (!episode.air_date) return
+  const id = `${series.id}:s${season.season_number}:e${episode.episode_number}`
+  await db.calendar.upsert(id, (doc) => ({
+    ...doc,
+    id,
+    media_type: 'tv',
+    title: `${series.title} S${String(season.season_number).padStart(2,'0')}E${String(episode.episode_number).padStart(2,'0')} ${episode.name || ''}`.trim(),
+    original_title: series.original_title || series.title,
+    release_date: new Date(episode.air_date).toISOString(),
+    poster_path: season.poster_path || series.poster_path || '',
+    genres: series.genres || [],
+    popularity: series.popularity || 0,
+    vote_average: series.vote_average || 0,
+    runtime: 0,
+    credits: [],
+  }))
+}
 const { of, from, EMPTY } = require('rxjs')
 const { map, mapTo, tap, mergeMap, delay, pluck, catchError } = require('rxjs/operators')
 const { Star, Movie } = require('@shared/Documents')
@@ -132,6 +152,19 @@ async function schedule({ log, sensorr, db }) {
         resolve()
       },
     )
+  )
+
+  await new Promise(resolve =>
+    from(db.series.allDocs({ include_docs: true })).pipe(
+      pluck('rows'),
+      map(rows => rows.map(row => ({ id: row.id, ...row.doc }))),
+      mergeMap(series => from(series.filter(s => s.state === "following"))),
+      mergeMap(series => from((series.seasons || [])).pipe(
+        mergeMap(season => from((season.episodes || [])).pipe(
+          tap(episode => upsertEpisodePublication(db, series, season, episode)),
+        )),
+      )),
+    ).subscribe(() => {}, () => resolve(), () => resolve())
   )
 }
 

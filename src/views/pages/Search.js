@@ -86,6 +86,11 @@ const Filters = {
         label: 'Star',
         emoji: '⭐',
       },
+      {
+        value: 'tv',
+        label: 'Series',
+        emoji: '📺',
+      },
     ],
     default: 'strict',
     apply: () => true,
@@ -137,6 +142,7 @@ const Search = ({ history, match, ...props }) => {
             movie: Movie,
             collection: Movie,
             person: Person,
+            tv: Movie,
           }[subject]}
           props={{
             movie: {},
@@ -145,8 +151,10 @@ const Search = ({ history, match, ...props }) => {
               link: (entity) => `/collection/${entity.id}`,
             },
             person: { display: 'portrait' },
+            tv: { link: (entity) => `/series/${entity.id}`, withState: false },
           }[subject]}
           placeholders={history.location.state?.items?.total || null}
+          transform={(res) => (res.results || []).map(item => subject === 'tv' ? ({ ...item, title: item.name, original_title: item.original_name }) : item)}
           onFetched={({ total }) => setHistoryState({ items: { total } })}
           onControls={({ filtering: { subject: s, query: q }}) => {
             if (query === q && subject === s) {
@@ -164,6 +172,7 @@ const Search = ({ history, match, ...props }) => {
                   movie: 'Pulp Fiction',
                   collection: 'Star Wars',
                   person: 'Steven Spielberg',
+                  tv: 'Breaking Bad',
                 }[subject]}</em> ?
               </span>
             ),

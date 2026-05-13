@@ -164,7 +164,37 @@ class Policy extends PureComponent {
             Choose default <code css={styles.code}>sort</code> option :
             <br/>
           </p>
+  
+        <div>
+          <h2 css={styles.subtitle}>TV Series defaults</h2>
+          <p css={styles.paragraph}>Configure default quality and excluded terms for TV release matching.</p>
           <div css={styles.column}>
+            <label css={styles.input}>Preferred TV quality</label>
+            <input
+              css={styles.select}
+              value={(values.tv || {}).quality || ''}
+              onChange={e => handleChange('tv', { ...(values.tv || {}), quality: e.target.value })}
+              placeholder="1080p"
+            />
+            <label css={styles.input}>TV download path</label>
+            <input
+              css={styles.select}
+              value={(values.tv || {}).blackhole || ''}
+              onChange={e => handleChange('tv', { ...(values.tv || {}), blackhole: e.target.value })}
+              placeholder="/tmp/tv"
+            />
+            <label css={styles.input}>Excluded terms (comma-separated)</label>
+            <input
+              css={styles.select}
+              value={((values.tv || {}).excluded_terms || []).join(', ')}
+              onChange={e => handleChange('tv', { ...(values.tv || {}), excluded_terms: e.target.value.split(',').map(v => v.trim()).filter(Boolean) })}
+              placeholder="cam, telesync"
+            />
+          </div>
+          <br/>
+          <br/>
+        </div>
+        <div css={styles.column}>
             <select css={styles.select} style={{ margin: '1em 1em 1em 0' }} value={values.sort} onChange={e => handleChange('sort', e.target.value)}>
               {['seeders', 'peers', 'size'].map(sort => (
                 <option key={sort} value={sort}>{`${sort.charAt(0).toUpperCase()}${sort.slice(1)}`}</option>

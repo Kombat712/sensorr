@@ -183,6 +183,17 @@ export const Navigation = withRouter(({ onClick, onChange, edges = true, locatio
 })
 
 const Filters = {
+  content_type: () => ({
+    label: 'Content',
+    type: 'radio',
+    options: [
+      { value: 'all', label: 'All' },
+      { value: 'movie', label: 'Movies' },
+      { value: 'tv', label: 'Series' },
+    ],
+    default: 'all',
+    apply: (entity, value) => value === 'all' || ((entity.media_type || 'movie') === value),
+  }),
   display: () => ({
     label: 'Display',
     type: 'radio',
@@ -221,7 +232,7 @@ const CalendarItems = compose(
     label: ({ total, reset, setState }) => (
       <span style={{ display: 'flex', flex: 1 }}>
         <button css={theme.resets.button} onClick={() => reset()}>
-          <span><strong>{total}</strong> Published movies</span>
+          <span><strong>{total}</strong> Published items</span>
         </button>
         <span style={{ flex: 1, justifyContent: 'center' }}>
           <Navigation
@@ -236,6 +247,7 @@ const CalendarItems = compose(
       genre: Documents.Movie.Filters.genre,
       popularity: Documents.Movie.Filters.popularity,
       vote_average: Documents.Movie.Filters.vote_average,
+      content_type: Filters.content_type,
       display: Filters.display,
     },
     sortings: {
@@ -247,7 +259,7 @@ const CalendarItems = compose(
       vote_average: Documents.Movie.Sortings.vote_average,
     },
     initial: () => ({
-      filtering: window?.history?.state?.state?.controls?.filtering || { display: 'strict' },
+      filtering: window?.history?.state?.state?.controls?.filtering || { display: 'strict', content_type: 'all' },
       sorting: window?.history?.state?.state?.controls?.sorting || 'release_date_full',
       reverse: window?.history?.state?.state?.controls?.reverse || true,
       state: window?.history?.state?.state?.controls?.state || {},
@@ -268,6 +280,7 @@ const CalendarItems = compose(
             {Emotion.jsx(blocks.popularity.element, { ...blocks.popularity.props, display: 'column' })}
             {Emotion.jsx(blocks.vote_average.element, { ...blocks.vote_average.props, display: 'column' })}
           </div>
+          {Emotion.jsx(blocks.content_type.element, blocks.content_type.props)}
           {Emotion.jsx(blocks.display.element, blocks.display.props)}
           {Emotion.jsx(blocks.sorting.element, blocks.sorting.props)}
         </>

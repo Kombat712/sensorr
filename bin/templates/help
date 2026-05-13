@@ -3,6 +3,7 @@ Usage: sensorr [command] [options]
 Commands:
   📼 record              Record wished movies from collection with best release
   💧 hydrate             Hydrate movies from collection and stalked stars data
+  📺 checkEpisodes       Check new aired episodes for followed series
   📅 schedule            Schedule calendar with recents movies from stalked stars (+/- 2 years from today)
   🔗 pairwise            Pairwise Plex instance with Sensorr instance
   🗑️  purge               Clean oldest log sessions (if directory space exceeds configured value)

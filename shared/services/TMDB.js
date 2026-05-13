@@ -1,6 +1,6 @@
 const qs = require('query-string')
 
-module.exports = class TMDB {
+class TMDB {
   constructor({ key, adult, region = 'en-US' }) {
     this.key = key
     this.region = region
@@ -44,6 +44,38 @@ module.exports = class TMDB {
   }
 }
 
+
+
+TMDB.prototype.searchSeries = function(query, page = 1) {
+  return this.fetch(['search', 'tv'], { query, page })
+}
+
+TMDB.prototype.getSeriesDetails = function(id) {
+  return this.fetch(['tv', id], { append_to_response: 'seasons,credits,alternative_titles' })
+}
+
+TMDB.prototype.getSeasonDetails = function(seriesId, seasonNumber) {
+  return this.fetch(['tv', seriesId, 'season', seasonNumber])
+}
+
+TMDB.prototype.getTrendingSeries = function(window = 'week') {
+  return this.fetch(['trending', 'tv', window])
+}
+
+TMDB.prototype.getPopularSeries = function(page = 1) {
+  return this.fetch(['tv', 'popular'], { page })
+}
+
+TMDB.prototype.discoverSeries = function({ genre, year, studio, page = 1 } = {}) {
+  return this.fetch(['discover', 'tv'], {
+    with_genres: genre,
+    first_air_date_year: year,
+    with_networks: studio,
+    page,
+  })
+}
+
+module.exports = TMDB
 module.exports.GENRES = {
   12: 'Aventure',
   14: 'Fantastique',

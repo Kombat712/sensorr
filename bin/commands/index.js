@@ -3,6 +3,7 @@ const schedule = require('@bin/commands/schedule')
 const pairwise = require('@bin/commands/pairwise')
 const purge = require('@bin/commands/purge')
 const hydrate = require('@bin/commands/hydrate')
+const checkEpisodes = require('@bin/commands/check-episodes')
 
 module.exports = {
   record,
@@ -10,4 +11,5 @@ module.exports = {
   pairwise,
   purge,
   hydrate,
+  checkEpisodes,
 }
