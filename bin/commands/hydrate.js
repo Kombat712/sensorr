@@ -1,6 +1,6 @@
 const { from, of, EMPTY } = require('rxjs')
 const { map, mapTo, tap, mergeMap, delay, pluck, catchError } = require('rxjs/operators')
-const { Movie, Star } = require('@shared/Documents')
+const { Movie, Star, Series } = require('@shared/Documents')
 const TMDB = require('@shared/services/TMDB')
 const chalk = require('chalk')
 
@@ -36,6 +36,32 @@ async function hydrate({ log, sensorr, db }) {
         log('')
         resolve()
       },
+    )
+  )
+
+
+  log('')
+  await new Promise(resolve =>
+    from(db.series.allDocs({ include_docs: true })).pipe(
+      pluck('rows'),
+      map(entities => entities.map(entity => ({ id: entity.id, ...entity.doc }))),
+      tap(series => series.length ? '' : log('📺', `No series to hydrate.`)),
+      map(series => series.sort((a, b) => a.time - b.time)),
+      mergeMap(series => from(series)),
+      mergeMap(item => of(item).pipe(
+        mergeMap(item => tmdb.getSeriesDetails(item.id)),
+        map(details => new Series({ ...item, ...details }).normalize()),
+        mergeMap(series => from(db.series.upsert(series.id, (doc) => ({ ...doc, ...series, time: Date.now() }))).pipe(mapTo(series))),
+        catchError(err => {
+          log('🚨', err.toString())
+          return EMPTY
+        }),
+        delay(1000),
+      ), null, 1),
+    ).subscribe(
+      (series) => log('💧 ', 'Hydrating', `series data ${chalk.inverse(series.title)}`),
+      (err) => log('🚨', err),
+      () => { log(''); resolve() },
     )
   )
 

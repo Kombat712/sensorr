@@ -18,16 +18,16 @@ const styles = {
   },
 }
 
-const LibraryItems = compose(
-  withDatabaseQuery((db) => db.movies.find().where('state').ne('ignored'), true),
+const buildLibraryItems = (query, label, filters = Documents.Movie.Filters, sortings = Documents.Movie.Sortings) => compose(
+  withDatabaseQuery(query, true),
   withControls({
     label: ({ total, reset }) => (
       <button css={theme.resets.button} onClick={() => reset()}>
-        <span><strong>{total}</strong> Movies</span>
+        <span><strong>{total}</strong> {label}</span>
       </button>
     ),
-    filters: Documents.Movie.Filters,
-    sortings: Documents.Movie.Sortings,
+    filters,
+    sortings,
     initial: () => ({
       filtering: window?.history?.state?.state?.controls?.filtering || {},
       sorting: window?.history?.state?.state?.controls?.sorting || 'time',
@@ -41,13 +41,13 @@ const LibraryItems = compose(
     render: {
       pane: (blocks) => (
         <>
-          {Emotion.jsx(blocks.genre.element, blocks.genre.props)}
-          {Emotion.jsx(blocks.state.element, blocks.state.props)}
+          {blocks.genre && Emotion.jsx(blocks.genre.element, blocks.genre.props)}
+          {blocks.state && Emotion.jsx(blocks.state.element, blocks.state.props)}
           <div css={[theme.styles.row, theme.styles.spacings.row]}>
-            {Emotion.jsx(blocks.year.element, { ...blocks.year.props, display: 'column' })}
-            {Emotion.jsx(blocks.popularity.element, { ...blocks.popularity.props, display: 'column' })}
-            {Emotion.jsx(blocks.vote_average.element, { ...blocks.vote_average.props, display: 'column' })}
-            {Emotion.jsx(blocks.runtime.element, { ...blocks.runtime.props, display: 'column' })}
+            {blocks.year && Emotion.jsx(blocks.year.element, { ...blocks.year.props, display: 'column' })}
+            {blocks.popularity && Emotion.jsx(blocks.popularity.element, { ...blocks.popularity.props, display: 'column' })}
+            {blocks.vote_average && Emotion.jsx(blocks.vote_average.element, { ...blocks.vote_average.props, display: 'column' })}
+            {blocks.runtime && Emotion.jsx(blocks.runtime.element, { ...blocks.runtime.props, display: 'column' })}
           </div>
           {Emotion.jsx(blocks.sorting.element, blocks.sorting.props)}
         </>
@@ -57,25 +57,29 @@ const LibraryItems = compose(
   }),
 )(Items)
 
-const Library = ({ history, ...props }) => (
+const LibraryMovieItems = buildLibraryItems((db) => db.movies.find().where('state').ne('ignored'), 'Movies')
+const LibrarySeriesItems = buildLibraryItems((db) => db.series.find().where('state').ne('ignored'), 'Series', Documents.Series.Filters, Documents.Series.Sortings)
+
+const Library = ({ history }) => (
   <Fragment>
     <Helmet>
       <title>Sensorr - Library</title>
     </Helmet>
     <div css={styles.wrapper}>
-      <LibraryItems
+      <LibraryMovieItems
         display="virtual-grid"
         child={Movie}
         placeholders={history.location.state?.items?.total || null}
         onFetched={({ total }) => setHistoryState({ items: { total } })}
+      />
+      <LibrarySeriesItems
+        display="virtual-grid"
+        child={Movie}
+        props={{ link: (entity) => `/series/${entity.id}` }}
         empty={{
-          emoji: '🍿',
-          title: "Oh no, your collection is empty",
-          subtitle: (
-            <span>
-              You should try to search for wished movie, <em>Interstellar</em> maybe ?
-            </span>
-          ),
+          emoji: '📺',
+          title: 'No series in your library yet',
+          subtitle: <span>Add a TV series and it will appear here.</span>,
         }}
       />
     </div>
