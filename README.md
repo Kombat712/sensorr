@@ -153,6 +153,36 @@ _Tips_: Docker image is based on `alpine`, so you can add `TZ` env variable with
 ## 🎚 Configure
 * Edit default configuration at `http://localhost:5070/settings` (or `config/config.json`)
 
+## 💻 Run locally (without Docker)
+If you want to run everything on your own machine and see UI/API on localhost:
+
+1. Install prerequisites:
+   * Node.js `18 LTS` (or `16` for legacy environments)
+   * Yarn
+2. Install dependencies:
+   * `yarn install`
+3. Start backend + frontend:
+   * `yarn local` (starts API + UI together)
+   * or in two terminals: `yarn dev` + `yarn server`
+4. Open the app:
+   * `http://localhost:5070`
+
+### If `yarn install` fails because of Yarn 4/Corepack registry setup
+This project is legacy-oriented and works best with classic Yarn. You can switch locally:
+
+```bash
+corepack enable
+corepack prepare yarn@1.22.22 --activate
+yarn --version
+yarn install
+```
+
+### Minimal local checks
+```bash
+node tests/shared.documents.test.js
+node tests/shared.tmdb.test.js
+```
+
 ## ⏰ Jobs
 Some necessary cron jobs will be launched in background every day:
 * _16:03_ `sensorr:purge`: Clean oldest log sessions (if directory space exceeds configured value)
