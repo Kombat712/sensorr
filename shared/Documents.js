@@ -1,6 +1,12 @@
 const { GENRES } = require('./services/TMDB')
 const { clean, humanize } = require('./utils/string')
 
+const normalizeSeriesStatus = (status = '') => {
+  const value = `${status}`.toLowerCase()
+  if (['ended', 'canceled', 'cancelled'].includes(value)) return 'ended'
+  return 'ongoing'
+}
+
 class Movie {
   constructor(payload, region = 'en-US') {
     this.payload = payload
@@ -398,7 +404,7 @@ class Series {
       original_title: this.payload.original_name || this.payload.original_title || '',
       overview: this.payload.overview || '',
       genres: (this.payload.genres || []).map(genre => typeof genre === 'object' ? genre.id : genre),
-      status: this.payload.status || 'ongoing',
+      status: normalizeSeriesStatus(this.payload.status),
       seasons_count: this.payload.number_of_seasons || 0,
       poster_path: this.payload.poster_path || '',
       vote_average: this.payload.vote_average || 0,
