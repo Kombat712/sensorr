@@ -10,6 +10,7 @@ COPY bin ./bin
 COPY server ./server
 COPY shared ./shared
 COPY src ./src
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN mkdir -p config && chmod 666 config && mkdir -p blackhole && chmod 660 blackhole \
     && apk add --no-cache python3 build-base \
@@ -20,4 +21,4 @@ RUN mkdir -p config && chmod 666 config && mkdir -p blackhole && chmod 660 black
 
 EXPOSE 5070
 
-CMD ["pm2-runtime", "start", "ecosystem.config.js"]
+CMD ["./docker-entrypoint.sh"]
