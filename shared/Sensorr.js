@@ -230,6 +230,28 @@ class Sensorr {
     )
   }
 
+  filterSeries(release) {
+    const seriesPolicy = this.config.seriesPolicy || { avoid: {} }
+    return Object.keys(seriesPolicy.avoid || {})
+      .map(tag => {
+        const test = (tag === 'custom' ?
+          (keyword) => (new RegExp(keyword, 'ig').test(release.meta.original) || new RegExp(keyword, 'ig').test(release.meta.generated)) :
+          (keyword) => (Array.isArray(release.meta[tag]) ? release.meta[tag] : [release.meta[tag]]).includes(keyword)
+        )
+        const intersection = seriesPolicy.avoid[tag].filter(test)
+        if (intersection.length) {
+          throw new Error(`👮 Release doesn't pass configured series policy (${tag}=${intersection.join(', ')})`)
+        }
+        return true
+      })
+      .every(bool => bool)
+  }
+
+  lookSeries(series, seasonNumber, episodeNumber, strict = false, hooks = {}) {
+    const episode = { season_number: seasonNumber, episode_number: episodeNumber, air_date: Date.now() }
+    return this.lookEpisode(series, episode, strict, hooks)
+  }
+
   lookEpisode(series, episode, strict = false, hooks = {}) {
     const season = `S${`${episode.season_number || 0}`.padStart(2, '0')}`
     const number = `E${`${episode.episode_number || 0}`.padStart(2, '0')}`

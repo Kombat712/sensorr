@@ -25,6 +25,11 @@
   "logs": {
     "limit": 10
   },
+  "seriesPolicy": {
+    "prefer": {},
+    "avoid": {}
+  },
+  "seriesBlackhole": "/tmp/series",
   "tv": {
     "blackhole": "/tmp/tv",
     "quality": "1080p",

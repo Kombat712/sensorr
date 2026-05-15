@@ -84,5 +84,47 @@ module.exports = {
         NODE_ENV: 'production'
       },
     },
+    {
+      name: 'sensorr:recordSeries',
+      cron: '0 18 * * *',
+      exec_mode: 'fork',
+      autorestart: false,
+      script: './bin/exec',
+      args: ['node ./bin/sensorr recordSeries'],
+      env: {
+        NODE_ENV: 'development'
+      },
+      env_production: {
+        NODE_ENV: 'production'
+      },
+    },
+    {
+      name: 'sensorr:scheduleSeries',
+      cron: '5 1 * * *',
+      exec_mode: 'fork',
+      autorestart: false,
+      script: './bin/exec',
+      args: ['node ./bin/sensorr scheduleSeries'],
+      env: {
+        NODE_ENV: 'development'
+      },
+      env_production: {
+        NODE_ENV: 'production'
+      },
+    },
+    {
+      name: 'sensorr:checkNewEpisodes',
+      cron: '*/30 * * * *',
+      exec_mode: 'fork',
+      autorestart: false,
+      script: './bin/exec',
+      args: ['node ./bin/sensorr checkNewEpisodes'],
+      env: {
+        NODE_ENV: 'development'
+      },
+      env_production: {
+        NODE_ENV: 'production'
+      },
+    },
   ],
 };

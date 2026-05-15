@@ -22,6 +22,16 @@
     },
     "token": ""
   },
+  "seriesPolicy": {
+    "prefer": {},
+    "avoid": {}
+  },
+  "seriesBlackhole": "/app/sensorr/blackhole/series",
+  "tv": {
+    "blackhole": "/app/sensorr/blackhole/tv",
+    "quality": "1080p",
+    "excluded_terms": []
+  },
   "logs": {
     "limit": 10
   }

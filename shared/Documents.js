@@ -399,7 +399,7 @@ class Series {
 
   normalize() {
     return {
-      id: this.payload.id.toString(),
+      id: (this.payload.id || '').toString(),
       title: this.payload.name || this.payload.title || '',
       original_title: this.payload.original_name || this.payload.original_title || '',
       overview: this.payload.overview || '',

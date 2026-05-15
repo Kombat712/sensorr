@@ -31,6 +31,7 @@ app.use(bauth({
 }))
 
 app.get('/proxy', require('@server/controllers/proxy'))
+app.get('/imgproxy', require('@server/controllers/imageProxy'))
 app.use('/api', require('@server/api'))
 
 const productionController = require('@server/controllers/production')

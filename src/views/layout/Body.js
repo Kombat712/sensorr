@@ -8,6 +8,9 @@ import Library from 'views/pages/Library'
 import Discover from 'views/pages/Discover'
 import MoviePage from 'views/pages/Movie'
 import SeriesPage from 'views/pages/Series'
+import SeriesLibrary from 'views/pages/SeriesLibrary'
+import SeriesDiscover from 'views/pages/SeriesDiscover'
+import SeriesCalendar from 'views/pages/SeriesCalendar'
 import Collection from 'views/pages/Collection'
 import PersonPage from 'views/pages/Person'
 import Calendar from 'views/pages/Calendar'
@@ -73,6 +76,11 @@ const Body = ({ ...props }) => (
         <Route path="/movie/:id(\d+):slug(.*)?/recommendations" exact component={Recommendations} />
         <Route path="/movie/:id(\d+):slug(.*)?/similar" exact component={Similar} />
         <Route path="/movie/:id(\d+):slug(.*)?/:releases(releases)?" exact component={MoviePage} />
+        <Route path="/series" exact component={() => <Redirect to="/series/library" />} />
+        <Route path="/series/library" exact component={SeriesLibrary} />
+        <Route path="/series/discover" exact component={SeriesDiscover} />
+        <Route path="/series/calendar/:year/:month" exact component={SeriesCalendar} />
+        <Route path="/series/calendar" exact component={() => <Redirect to={`/series/calendar/${(new Date()).getFullYear()}/${(new Date()).getMonth() + 1}`} />} />
         <Route path="/series/:id(\d+)" exact component={SeriesPage} />
         <Route path="/collection/:id" exact component={Collection} />
         <Route path="/star/:id" exact component={({ match: { params: { id } } }) => <Redirect to={`/person/${id}`} />} />

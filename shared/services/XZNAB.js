@@ -33,6 +33,67 @@ module.exports = class XZNAB {
     }
   }
 
+  searchSeries(query) {
+    return this.searchTVCategories(query, '5030,5040,5000')
+  }
+
+  searchTVCategories(query, cats = '5030,5040,5000') {
+    const [ url, settings ] = this.build({
+      q: query,
+      Query: query,
+      t: 'search',
+      cat: cats,
+    })
+
+    return request({ url, responseType: 'text', ...settings }).pipe(
+      map(res => res.response),
+      map(text => {
+        try {
+          return JSON.parse(text)
+        } catch (e) {
+          const body = X2J.xml2json(text)
+          const items = (typeof (body.rss || { channel: {} }).channel.item === 'undefined' ? [] : Array.isArray(body.rss.channel.item) ? body.rss.channel.item : [body.rss.channel.item])
+            .map(({ torznab, ...item }) => ({
+              ...(torznab.reduce((obj, attr) => ({
+                ...obj,
+                [attr.name]: (
+                  !obj[attr.name] ?
+                    attr.value :
+                    (Array.isArray(obj[attr.name]) ? [...obj[attr.name], attr.value] : [obj[attr.name], attr.value])
+                ),
+              }), {})),
+              ...item,
+            }))
+            .map(({
+              downloadvolumefactor,
+              minimumratio,
+              minimumseedtime,
+              pubDate,
+              uploadvolumefactor,
+              ...item
+            }) => ({
+              ...item,
+              link: [this.url.split('://').shift(), '://', unescape(item.enclosure.url, 'all').split('://').pop()].join(''),
+              grabs: parseInt(item.grabs),
+              size: parseInt(item.size),
+              downloadVolumeFactor: parseInt(downloadvolumefactor),
+              minimumRatio: parseInt(minimumratio),
+              minimumSeedTime: parseInt(minimumseedtime),
+              peers: parseInt(item.peers),
+              publishDate: pubDate,
+              seeders: parseInt(item.seeders),
+              site: item.link.split(`${body.rss.channel.atom.href}dl/`).pop().split('/').shift(),
+              uploadVolumeFactor: parseInt(uploadvolumefactor),
+              category: Array.isArray(item) ? item.category.map(category => parseInt(category)) : parseInt(item.category),
+            }))
+
+          return { ...(body.rss || {}), items }
+        }
+      }),
+      map(payload => camelize(payload)),
+    )
+  }
+
   search(query) {
     const [ url, settings ] = this.build({
       q: query,

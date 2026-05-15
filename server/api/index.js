@@ -6,6 +6,7 @@ api.post('/trigger', require('@server/api/trigger'))
 api.post('/configure', require('@server/api/configure'))
 api.post('/plex', require('@server/api/plex'))
 api.post('/grab', require('@server/api/grab'))
+api.post('/grabSeries', require('@server/api/grabSeries'))
 api.get('/dump', require('@server/api/dump'))
 api.post('/load', require('@server/api/load'))
 

@@ -8,6 +8,9 @@ const common = require('./webpack.config.js')
 
 module.exports = merge(common, {
   mode: 'production',
+  output: {
+    filename: '[name].[contenthash].js',
+  },
   optimization: {
     splitChunks: {
       chunks: 'all',

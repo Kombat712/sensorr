@@ -864,6 +864,33 @@ module.exports.CERTIFICATIONS = {
   ]
 }
 
+module.exports.TV_GENRES = {
+  10759: 'Action & Adventure',
+  10765: 'Sci-Fi & Fantasy',
+  10766: 'Soap',
+  10767: 'Talk',
+  10768: 'War & Politics',
+  10763: 'News',
+  10764: 'Reality',
+  10762: 'Kids',
+  16: 'Animation',
+  35: 'Comedy',
+  18: 'Drama',
+  9648: 'Mystery',
+  80: 'Crime',
+  99: 'Documentary',
+  36: 'History',
+  10751: 'Family',
+  37: 'Western',
+  27: 'Horror',
+  53: 'Thriller',
+  10752: 'War',
+  28: 'Action',
+  12: 'Adventure',
+  14: 'Fantasy',
+  878: 'Science Fiction',
+}
+
 module.exports.STUDIOS = {
   "Disney": [
     {

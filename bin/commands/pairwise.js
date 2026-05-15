@@ -17,9 +17,9 @@ async function pairwise({ log, sensorr, db }) {
       log('')
 
       from(plex.client.query('/library/sections')).pipe(
-        mergeMap(payload => from(payload.MediaContainer.Directory.filter((directory) => directory.type === 'movie'))),
+        mergeMap(payload => from(payload.MediaContainer.Directory.filter((directory) => directory.type === 'movie' || directory.type === 'show'))),
         mergeMap(section => plex.client.query(`/library/sections/${section.key}/all`)),
-        tap(payload => log('🎞️ ', `Found ${chalk.bold(payload.MediaContainer.Metadata.length)} movies available on Plex server`)),
+        tap(payload => log('🎞️ ', `Found ${chalk.bold(payload.MediaContainer.Metadata.length)} ${payload.MediaContainer.title1 || 'items'} available on Plex server`)),
         tap(() => log('')),
         mergeMap(payload => from(payload.MediaContainer.Metadata)),
         mergeMap(payload => from(plex.client.query(payload.key)).pipe(
@@ -32,36 +32,62 @@ async function pairwise({ log, sensorr, db }) {
           filter(guid => guid),
           tap(guid => log('🔗 ', `Handle ${chalk.bold(JSON.stringify(guid))} guid from Plex server`)),
           mergeMap(guid => of(guid).pipe(
-            mergeMap(guid => db.movies.find({ selector: { [{ 'com.plexapp.agents.imdb': 'imdb_id', 'com.plexapp.agents.themoviedb': 'id' }[guid.agent]]: { $eq: guid.id } } })),
-            map(result => result.docs.length ? result.docs[0] : null),
-            mergeMap(doc => !doc ?
-              of(guid).pipe(
-                tap(guid => log('📭', `Missing ${chalk.inverse({ 'com.plexapp.agents.imdb': 'IMDB', 'com.plexapp.agents.themoviedb': 'TMDB' }[guid.agent])} movie ${chalk.gray(guid.id)}`)),
-                mergeMap(guid => ({
-                  'com.plexapp.agents.themoviedb': of(guid.id),
-                  'com.plexapp.agents.imdb': from(tmdb.fetch(['find', guid.id], { external_source: 'imdb_id' })).pipe(
-                    mergeMap(payload => {
-                      if (!payload.movie_results.length) {
-                        log('📭', `Sorry, no result for IMDB movie ${chalk.gray(guid.id)}`)
-                        return EMPTY
-                      }
-
-                      return of(payload.movie_results.pop().id)
-                    }),
-                  ),
-                }[guid.agent])),
-                mergeMap(id => tmdb.fetch(['movie', id], { append_to_response: 'alternative_titles,release_dates' })),
-                map(entity => new Documents.Movie({ ...entity, state: 'archived' }, sensorr.config.region).normalize()),
-                mergeMap(movie => from(db.movies.upsert(movie.id, (doc) => ({ ...doc, ...movie }))).pipe(mapTo(movie))),
-                delay(2000),
-                tap(movie => log('📼', `Movie ${chalk.inverse(movie.title)} which is available on Plex server, will now be ${chalk.gray('archived')} on Sensorr`)),
-              ) : (doc.state === 'archived' ?
+            mergeMap(guid => {
+              if (guid.agent === 'com.plexapp.agents.themoviedb') {
+                return from(db.movies.find({ selector: { id: { $eq: guid.id } } }).pipe(
+                  map(result => ({ type: 'movie', doc: result.docs.length ? result.docs[0] : null })),
+                  mergeMap(({ doc }) => doc ? of({ type: 'movie', doc }) :
+                    from(db.series.find({ selector: { id: { $eq: guid.id } } })).pipe(
+                      map(result => ({ type: 'series', doc: result.docs.length ? result.docs[0] : null }))
+                    )
+                  )
+                ))
+              } else {
+                return of({ type: 'movie', doc: null })
+              }
+            }),
+            mergeMap(({ type, doc }) => !doc ?
+              of({ type, guid }).pipe(
+                tap(({ type, guid }) => log('📭', `Missing ${chalk.inverse('TMDB')} ${type} ${chalk.gray(guid.id)}`)),
+                mergeMap(({ type, guid }) => type === 'series' ?
+                  from(tmdb.getSeriesDetails(guid.id)).pipe(
+                    map(payload => new Documents.Series({ ...payload, state: 'following' }).normalize()),
+                    mergeMap(series => from(db.series.upsert(series.id, (doc) => ({ ...doc, ...series }))).pipe(mapTo(series))),
+                    delay(2000),
+                    tap(series => log('📼', `Series ${chalk.inverse(series.title)} added from Plex`)),
+                  ) :
+                  of(guid).pipe(
+                    mergeMap(guid => ({
+                      'com.plexapp.agents.themoviedb': of(guid.id),
+                      'com.plexapp.agents.imdb': from(tmdb.fetch(['find', guid.id], { external_source: 'imdb_id' })).pipe(
+                        mergeMap(payload => {
+                          if (!payload.movie_results.length) {
+                            log('📭', `Sorry, no result for IMDB movie ${chalk.gray(guid.id)}`)
+                            return EMPTY
+                          }
+                          return of(payload.movie_results.pop().id)
+                        }),
+                      ),
+                    }[guid.agent])),
+                    mergeMap(id => tmdb.fetch(['movie', id], { append_to_response: 'alternative_titles,release_dates' })),
+                    map(entity => new Documents.Movie({ ...entity, state: 'archived' }, sensorr.config.region).normalize()),
+                    mergeMap(movie => from(db.movies.upsert(movie.id, (doc) => ({ ...doc, ...movie }))).pipe(mapTo(movie))),
+                    delay(2000),
+                    tap(movie => log('📼', `Movie ${chalk.inverse(movie.title)} which is available on Plex server, will now be ${chalk.gray('archived')} on Sensorr`)),
+                  )
+                ),
+              ) : (type === 'series' ?
                 of(doc).pipe(
-                  tap(movie => log('📼', `Movie ${chalk.inverse(movie.title)} already ${chalk.gray('archived')} on Sensorr`)),
+                  tap(series => log('📼', `Series ${chalk.inverse(series.title)} already synced from Plex`)),
                 ) :
-                from(db.movies.upsert(doc._id, (doc) => ({ id: doc._id, ...doc, ...doc, time: Date.now(), state: 'archived' }))).pipe(
-                  mapTo(doc),
-                  tap(movie => log('📼', `Movie ${chalk.inverse(movie.title)} which is available on Plex server, will now be ${chalk.gray('archived')} on Sensorr`)),
+                (doc.state === 'archived' ?
+                  of(doc).pipe(
+                    tap(movie => log('📼', `Movie ${chalk.inverse(movie.title)} already ${chalk.gray('archived')} on Sensorr`)),
+                  ) :
+                  from(db.movies.upsert(doc._id, (doc) => ({ id: doc._id, ...doc, ...doc, time: Date.now(), state: 'archived' }))).pipe(
+                    mapTo(doc),
+                    tap(movie => log('📼', `Movie ${chalk.inverse(movie.title)} which is available on Plex server, will now be ${chalk.gray('archived')} on Sensorr`)),
+                  )
                 )
               )
             ),

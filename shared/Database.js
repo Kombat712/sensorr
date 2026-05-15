@@ -77,7 +77,7 @@ const SCHEMAS = {
 
   series: {
     title: 'series',
-    version: 0,
+    version: 1,
     description: 'Describe a TMDB tv series',
     type: 'object',
     required: ['id', 'title'],
@@ -95,6 +95,66 @@ const SCHEMAS = {
       vote_average: { type: 'number' },
       seasons: { type: 'array' },
       time: { type: 'number', index: true },
+      type: { type: 'string', default: 'series' },
+      credits: { type: 'array' },
+      watched: { type: 'object' },
+    },
+  },
+  seasons: {
+    title: 'season',
+    version: 0,
+    description: 'Describe a TV season',
+    type: 'object',
+    required: ['id', 'series_id', 'season_number'],
+    attachments: {},
+    properties: {
+      id: { type: 'string', primary: true },
+      series_id: { type: 'string' },
+      season_number: { type: 'number' },
+      overview: { type: 'string' },
+      poster_path: { type: 'string' },
+      air_date: { type: 'number' },
+      episodes: { type: 'array' },
+      time: { type: 'number', index: true },
+    },
+  },
+  episodes: {
+    title: 'episode',
+    version: 0,
+    description: 'Describe a TV episode',
+    type: 'object',
+    required: ['id', 'series_id', 'season_number', 'episode_number'],
+    attachments: {},
+    properties: {
+      id: { type: 'string', primary: true },
+      series_id: { type: 'string' },
+      season_number: { type: 'number' },
+      episode_number: { type: 'number' },
+      name: { type: 'string' },
+      overview: { type: 'string' },
+      air_date: { type: 'number' },
+      status: { type: 'string', default: 'unreleased' },
+      watched: { type: 'boolean', default: false },
+      time: { type: 'number', index: true },
+    },
+  },
+  series_calendar: {
+    title: 'series_publication',
+    version: 0,
+    description: 'Describe a TV episode publication date',
+    type: 'object',
+    required: ['id', 'air_date', 'series_id', 'episode_id'],
+    attachments: {},
+    properties: {
+      id: { type: 'string', primary: true },
+      air_date: { type: 'string', index: true },
+      series_id: { type: 'string' },
+      episode_id: { type: 'string' },
+      series_title: { type: 'string' },
+      season_number: { type: 'number' },
+      episode_number: { type: 'number' },
+      name: { type: 'string' },
+      poster_path: { type: 'string' },
     },
   },
   stars: {
@@ -224,28 +284,15 @@ const MIGRATIONS = {
   },
 
   series: {
-    title: 'series',
-    version: 0,
-    description: 'Describe a TMDB tv series',
-    type: 'object',
-    required: ['id', 'title'],
-    attachments: {},
-    properties: {
-      id: { type: 'string', primary: true },
-      state: { type: 'string', default: 'following' },
-      title: { type: 'string' },
-      original_title: { type: 'string' },
-      overview: { type: 'string' },
-      genres: { type: 'array' },
-      status: { type: 'string' },
-      seasons_count: { type: 'number' },
-      poster_path: { type: 'string' },
-      vote_average: { type: 'number' },
-      seasons: { type: 'array' },
-      time: { type: 'number', index: true },
+    1: (doc) => {
+      doc.type = 'series'
+      doc.credits = []
+      doc.watched = {}
+      return doc
     },
   },
-  series: {},
+  seasons: {},
+  episodes: {},
   stars: {
     1: (doc) => {
       doc.gender = 0
