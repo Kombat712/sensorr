@@ -20,7 +20,7 @@ module.exports = {
       exec_mode: 'fork',
       autorestart: false,
       script: './bin/exec',
-      args: ['./bin/sensorr', 'purge'],
+      args: ['node ./bin/sensorr purge'],
       env: {
         NODE_ENV: 'development'
       },
@@ -34,7 +34,7 @@ module.exports = {
       exec_mode: 'fork',
       autorestart: false,
       script: './bin/exec',
-      args: ['./bin/sensorr', 'record'],
+      args: ['node ./bin/sensorr record'],
       env: {
         NODE_ENV: 'development'
       },
@@ -48,7 +48,7 @@ module.exports = {
       exec_mode: 'fork',
       autorestart: false,
       script: './bin/exec',
-      args: ['./bin/sensorr', 'schedule'],
+      args: ['node ./bin/sensorr schedule'],
       env: {
         NODE_ENV: 'development'
       },
@@ -62,7 +62,7 @@ module.exports = {
       exec_mode: 'fork',
       autorestart: false,
       script: './bin/exec',
-      args: ['./bin/sensorr', 'pairwise'],
+      args: ['node ./bin/sensorr pairwise'],
       env: {
         NODE_ENV: 'development'
       },
@@ -76,7 +76,7 @@ module.exports = {
       exec_mode: 'fork',
       autorestart: false,
       script: './bin/exec',
-      args: ['./bin/sensorr', 'hydrate'],
+      args: ['node ./bin/sensorr hydrate'],
       env: {
         NODE_ENV: 'development'
       },

@@ -33,11 +33,11 @@ app.use(bauth({
 app.get('/proxy', require('@server/controllers/proxy'))
 app.use('/api', require('@server/api'))
 
-if (app.get('env') === 'production') {
-  app.get('/', require('@server/controllers/production'))
-  app.use(express.static(paths.dist))
-  app.use(require('@server/controllers/production')) // * route
-}
+const productionController = require('@server/controllers/production')
+
+app.get('/', productionController)
+app.use(express.static(paths.dist))
+app.use(productionController) // * route
 
 require('@server/io')
 
